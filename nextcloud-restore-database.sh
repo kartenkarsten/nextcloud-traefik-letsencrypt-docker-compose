@@ -11,23 +11,25 @@
 # To make the `nextcloud-restore-database.shh` script executable, run the following command:
 # `chmod +x nextcloud-restore-database.sh`
 # Usage of this script ensures a controlled and guided process to restore the database from an existing backup.
-
-NEXTCLOUD_CONTAINER=$(docker ps -aqf "name=nextcloud-nextcloud")
-NEXTCLOUD_BACKUPS_CONTAINER=$(docker ps -aqf "name=nextcloud-backups")
-NEXTCLOUD_DB_NAME="nextclouddb"
-NEXTCLOUD_DB_USER="nextclouddbuser"
-POSTGRES_PASSWORD=$(docker exec $NEXTCLOUD_BACKUPS_CONTAINER printenv PGPASSWORD)
-BACKUP_PATH="/srv/nextcloud-postgres/backups/"
+source .env
+DOCKER_HOST=ssh://$(echo $NEXTCLOUD_HOSTNAME)
+NEXTCLOUD_CONTAINER=$(docker -H ${DOCKER_HOST} ps -aqf "name=nextcloud-nextcloud")
+NEXTCLOUD_BACKUPS_CONTAINER=$(docker -H ${DOCKER_HOST} ps -aqf "name=nextcloud-backups")
+# from env
+# NEXTCLOUD_DB_NAME="nextclouddb"
+# NEXTCLOUD_DB_USER="nextclouddbuser"
+POSTGRES_PASSWORD=$(docker -H ${DOCKER_HOST} exec $NEXTCLOUD_BACKUPS_CONTAINER printenv PGPASSWORD)
+BACKUP_PATH="${POSTGRES_BACKUPS_PATH}/"
 
 echo "--> All available database backups:"
 
-for entry in $(docker container exec "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "ls $BACKUP_PATH")
+for entry in $(docker -H ${DOCKER_HOST} container exec "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "ls $BACKUP_PATH")
 do
   echo "$entry"
 done
 
 echo "--> Copy and paste the backup name from the list above to restore database and press [ENTER]
---> Example: nextcloud-postgres-backup-YYYY-MM-DD_hh-mm.gz"
+--> Example: ${POSTGRES_BACKUP_NAME}-YYYY-MM-DD_hh-mm.gz"
 echo -n "--> "
 
 read SELECTED_DATABASE_BACKUP
@@ -35,13 +37,13 @@ read SELECTED_DATABASE_BACKUP
 echo "--> $SELECTED_DATABASE_BACKUP was selected"
 
 echo "--> Stopping service..."
-docker stop "$NEXTCLOUD_CONTAINER"
+docker -H ${DOCKER_HOST} stop "$NEXTCLOUD_CONTAINER"
 
 echo "--> Restoring database..."
-docker exec "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "dropdb -h postgres -p 5432 $NEXTCLOUD_DB_NAME -U $NEXTCLOUD_DB_USER \
+docker -H ${DOCKER_HOST} exec "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "dropdb -h postgres -p 5432 $NEXTCLOUD_DB_NAME -U $NEXTCLOUD_DB_USER \
 && createdb -h postgres -p 5432 $NEXTCLOUD_DB_NAME -U $NEXTCLOUD_DB_USER \
 && gunzip -c ${BACKUP_PATH}${SELECTED_DATABASE_BACKUP} | psql -h postgres -p 5432 $NEXTCLOUD_DB_NAME -U $NEXTCLOUD_DB_USER"
 echo "--> Database recovery completed..."
 
 echo "--> Starting service..."
-docker start "$NEXTCLOUD_CONTAINER"
+docker -H ${DOCKER_HOST} start "$NEXTCLOUD_CONTAINER"

@@ -12,21 +12,23 @@
 # `chmod +x nextcloud-restore-application-data.sh`
 # By utilizing this script, you can efficiently restore application data from an existing backup while ensuring proper coordination with the running service.
 
-NEXTCLOUD_CONTAINER=$(docker ps -aqf "name=nextcloud-nextcloud")
-NEXTCLOUD_BACKUPS_CONTAINER=$(docker ps -aqf "name=nextcloud-backups")
-BACKUP_PATH="/srv/nextcloud-application-data/backups/"
-RESTORE_PATH="/var/www/html/"
-BACKUP_PREFIX="nextcloud-application-data"
+source .env
+DOCKER_HOST=ssh://$(echo $NEXTCLOUD_HOSTNAME)
+NEXTCLOUD_CONTAINER=$(docker -H ${DOCKER_HOST} ps -aqf "name=nextcloud-nextcloud")
+NEXTCLOUD_BACKUPS_CONTAINER=$(docker -H ${DOCKER_HOST} ps -aqf "name=nextcloud-backups")
+BACKUP_PATH="${DATA_BACKUPS_PATH}/"
+RESTORE_PATH="${DATA_PATH}/"
+BACKUP_PREFIX="${DATA_BACKUP_NAME}"
 
 echo "--> All available application data backups:"
 
-for entry in $(docker container exec -it "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "ls $BACKUP_PATH")
+for entry in $(docker -H ${DOCKER_HOST} container exec -it "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "ls $BACKUP_PATH")
 do
   echo "$entry"
 done
 
 echo "--> Copy and paste the backup name from the list above to restore application data and press [ENTER]
---> Example: ${BACKUP_PREFIX}-backup-YYYY-MM-DD_hh-mm.tar.gz"
+--> Example: ${BACKUP_PREFIX}-YYYY-MM-DD_hh-mm.tar.gz"
 echo -n "--> "
 
 read SELECTED_APPLICATION_BACKUP
@@ -34,11 +36,11 @@ read SELECTED_APPLICATION_BACKUP
 echo "--> $SELECTED_APPLICATION_BACKUP was selected"
 
 echo "--> Stopping service..."
-docker stop "$NEXTCLOUD_CONTAINER"
+docker -H ${DOCKER_HOST} stop "$NEXTCLOUD_CONTAINER"
 
 echo "--> Restoring application data..."
-docker exec -it "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "rm -rf ${RESTORE_PATH}* && tar -zxpf ${BACKUP_PATH}${SELECTED_APPLICATION_BACKUP} -C /"
+docker -H ${DOCKER_HOST} exec -it "$NEXTCLOUD_BACKUPS_CONTAINER" sh -c "rm -rf ${RESTORE_PATH}* && tar -zxpf ${BACKUP_PATH}${SELECTED_APPLICATION_BACKUP} -C /"
 echo "--> Application data recovery completed..."
 
 echo "--> Starting service..."
-docker start "$NEXTCLOUD_CONTAINER"
+docker -H ${DOCKER_HOST} start "$NEXTCLOUD_CONTAINER"

@@ -12,15 +12,17 @@ The badge displayed on my repository indicates the status of the deployment veri
 
 💡 Note that the `.env` file should be in the same directory as `nextcloud-traefik-letsencrypt-docker-compose.yml`.
 
+`DOCKER_HOST=ssh://$(source .env && echo $NEXTCLOUD_HOSTNAME)`
+
 Create networks for your services before deploying the configuration using the commands:
 
-`docker network create traefik-network`
+`docker -H ${DOCKER_HOST} network create traefik-network`
 
-`docker network create nextcloud-network`
+`docker -H ${DOCKER_HOST} network create nextcloud-network`
 
 Deploy Nextcloud using Docker Compose:
 
-`docker compose -f nextcloud-traefik-letsencrypt-docker-compose.yml -p nextcloud up -d`
+`docker -H ${DOCKER_HOST} compose -f nextcloud-traefik-letsencrypt-docker-compose.yml -p nextcloud up -d`
 
 ## Background Jobs Using Cron
 
@@ -103,11 +105,11 @@ New Nextcloud users typically receive default files and folders upon account cre
 
 List all running containers to find the one running Nextcloud:
 
-`docker ps`
+`docker -H ${DOCKER_HOST} ps`
 
 Run the command below, replacing `nextcloud-container-name` with your container's name. Adjust `33` to the correct user ID if different:
 
-`docker exec -u 33 -it nextcloud-container-name php occ config:system:set skeletondirectory --value=''`
+`docker -H ${DOCKER_HOST} exec -u 33 -it nextcloud-container-name php occ config:system:set skeletondirectory --value=''`
 
 ## Fixing Database Index Issues
 
@@ -115,15 +117,15 @@ Your Nextcloud database might be missing some indexes. This situation can occur 
 
 List all running containers to find the one running Nextcloud:
 
-`docker ps`
+`docker -H ${DOCKER_HOST} ps`
 
 Run the command below, replacing `nextcloud-container-name` with your container's name. Adjust `33` to the correct user ID if different:
 
-`docker exec -u 33 -it nextcloud-container-name php occ db:add-missing-indices`
+`docker -H ${DOCKER_HOST} exec -u 33 -it nextcloud-container-name php occ db:add-missing-indices`
 
 Confirm the indices were added by checking the status:
 
-`docker exec -u 33 -it nextcloud-container-name php occ status`
+`docker -H ${DOCKER_HOST} exec -u 33 -it nextcloud-container-name php occ status`
 
 - Operations on large databases can take time; consider scheduling during low-usage periods.
 - Always backup your database before making changes.
@@ -136,11 +138,11 @@ To make all manually added files visible in the UI, you can use the `occ files:s
 
 List all running containers to find the one running Nextcloud:
 
-`docker ps`
+`docker -H ${DOCKER_HOST} ps`
 
 Run the command below, replacing `nextcloud-container-name` with your container's name. Adjust `33` to the correct user ID if different:
 
-`docker exec -u 33 -it nextcloud-container-name php occ files:scan --all`
+`docker -H ${DOCKER_HOST} exec -u 33 -it nextcloud-container-name php occ files:scan --all`
 
 - Be aware that this command can significantly affect performance during its execution. It is advisable to run this scan during periods of low user activity.
 - Always ensure that you have up-to-date backups before performing any operations that affect the filesystem or database.
