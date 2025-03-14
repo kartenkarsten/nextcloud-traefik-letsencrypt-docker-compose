@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/git,macos,xcode,jekyll,packer,ansible,vagrant,windows,notepadpp,terraform,powershell,terragrunt,sublimetext,ansibletower,visualstudiocode,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=git,macos,xcode,jekyll,packer,ansible,vagrant,windows,notepadpp,terraform,powershell,terragrunt,sublimetext,ansibletower,visualstudiocode,linux
 
+# ensure passwords are not commited
+.env
+
 ### Ansible ###
 *.retry
 
