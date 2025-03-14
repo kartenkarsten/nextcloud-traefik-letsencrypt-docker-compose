@@ -20,9 +20,13 @@ Create networks for your services before deploying the configuration using the c
 
 `docker -H ${DOCKER_HOST} network create nextcloud-network`
 
+Deploy Reverse-Proxy using Docker Compose:
+
+`docker -H ${DOCKER_HOST} compose -f traefik-letsencrypt-docker-compose.yml -p traefik up -d`
+
 Deploy Nextcloud using Docker Compose:
 
-`docker -H ${DOCKER_HOST} compose -f nextcloud-traefik-letsencrypt-docker-compose.yml -p nextcloud up -d`
+`docker -H ${DOCKER_HOST} compose -f nextcloud-docker-compose.yml -p nextcloud up -d`
 
 ## Background Jobs Using Cron
 
